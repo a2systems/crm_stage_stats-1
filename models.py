@@ -9,6 +9,7 @@ class CrmStageStat(models.Model):
     stage_from_id = fields.Many2one('crm.stage',string='Etapa desde')
     stage_to_id = fields.Many2one('crm.stage',string='Etapa hasta')
     date = fields.Datetime('Fecha')
+    diff_days = fields.Integer('Dias')
 
 class CrmLead(models.Model):
     _inherit = 'crm.lead'
@@ -22,11 +23,17 @@ class CrmLead(models.Model):
         res = super(CrmLead, self).write(vals)
         if stage_from_id and stage_to_id:
             for rec in self:
+                prev_stage = self.env['crm.stage.stat'].search([('lead_id','=',rec.id)],order='id desc',limit=1)
+                if prev_stage:
+                    diff_days = (datetime.now() - prev_stage.date).days
+                else:
+                    diff_days = (datetime.now() - rec.create_date).days
                 vals = {
                         'lead_id': rec.id,
                         'stage_from_id': stage_from_id,
                         'stage_to_id': stage_to_id,
                         'date': str(datetime.now())[:19],
+                        'diff_days': diff_days,
                         }
                 stat_id = self.env['crm.stage.stat'].create(vals)
         return res
